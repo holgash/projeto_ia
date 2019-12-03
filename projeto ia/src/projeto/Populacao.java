@@ -14,7 +14,7 @@ public class Populacao {
 		for(int i=0; i< genes.length; i++) {
 			genes[i] = new Cromossomo(AlgoritmoGenetico.BITS_QNT_ARVORES,AlgoritmoGenetico.BITS_PROFUNDIDADE,AlgoritmoGenetico.BITS_QNT_ATRIBUTOS).inizializarCromossomos();
 		}
-		//ordenarCromossomosPorAptidao();
+		ordenarCromossomosPorAptidao();
 		return this;
 	}
 	

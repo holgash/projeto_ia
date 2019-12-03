@@ -1,5 +1,6 @@
 package projeto;
 
+import weka.classifiers.Evaluation;
 import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Instances;
@@ -9,26 +10,32 @@ public class AlgoritmoGenetico {
 	public static final int BITS_QNT_ARVORES = 7;
 	public static final int BITS_PROFUNDIDADE = 2;
 	public static final int BITS_QNT_ATRIBUTOS = 2;
-	public static final int TAM_POPULACAO = 8;
+	public static final int TAM_POPULACAO = 20;
 	public static final int NUM_ELITE_CROMO = 1;
-	public static final int TOURNAMENT_SELECTION_SIZE = 4;
-	public static final double FREQUENCIA_MUTACAO = 0.005;
-	public static final int MAX_GERACAO = 1;
+	public static final int TOURNAMENT_SELECTION_SIZE = 8;
+	public static final double FREQUENCIA_MUTACAO = 0.01;
+	public static final int MAX_GERACAO = 200;
 	
 	private RandomForest rf;
 	private FilteredClassifier fc;
-	private Instances instances = null;
+	private Instances treinamento = null;
+	private Instances validacao = null;
+	private Instances teste = null;
 	
-	public AlgoritmoGenetico(String path) {
+	public AlgoritmoGenetico(String pathTreinamento, String pathValidacao) {
 		this.rf = new RandomForest();
 		this.fc = new FilteredClassifier();
 		fc.setClassifier(rf);
-		
 		DataSource ds = null;
+		
 		try {
-			ds = new DataSource(path);
-			instances = ds.getDataSet();
-			instances.setClassIndex(instances.numAttributes()-1);
+			ds = new DataSource(pathTreinamento);
+			treinamento = ds.getDataSet();
+			treinamento.setClassIndex(treinamento.numAttributes()-1);
+	
+			ds = new DataSource(pathValidacao);
+			validacao = ds.getDataSet();
+			validacao.setClassIndex(validacao.numAttributes()-1);
 		}catch(Exception e) {
 		}
 		
@@ -38,28 +45,27 @@ public class AlgoritmoGenetico {
 		Populacao evolucao = mutacaoPop(crossoverPop(pop));
 		
 		for(int i = 0; i<evolucao.getGenes().length;i++) {
-			int certo = 0,total = 0;
-			rf.setNumIterations(Conversor.binToDec(evolucao.getGenes()[i].getArvores()));
-			rf.setMaxDepth(Conversor.binToDec(evolucao.getGenes()[i].getArvores()));
-			rf.setNumFeatures(Conversor.binToDec(evolucao.getGenes()[i].getAtributos()));
+			rf.setNumIterations(1+Conversor.binToDec(evolucao.getGenes()[i].getArvores()));
+			rf.setMaxDepth(1+Conversor.binToDec(evolucao.getGenes()[i].getProfundidade()));
+			rf.setNumFeatures(1+Conversor.binToDec(evolucao.getGenes()[i].getAtributos()));
 			
+			double certo = 0,total = 0;
 			try {
-				fc.buildClassifier(instances);
-				for(int j = 0; j<instances.numInstances();j++) {
-					double pred = fc.classifyInstance(instances.instance(i));
-					if(instances.classAttribute().value((int) instances.instance(i).classValue()) == 
-							instances.classAttribute().value((int) pred)) {
-						certo++;
-						total++;
-					}
-					else {
-						total++;
+				fc.buildClassifier(treinamento);
+				Evaluation eval = new Evaluation(treinamento);
+				double[] a =eval.evaluateModel(fc, validacao);
+				for(int j = 0; j< a.length;j++) {
+					if(a[j] == 0.0) {
+						certo+=1;
 					}
 				}
+				total = a.length;
+					
+				//System.out.println(eval.toSummaryString());
+
 			}catch(Exception e) {
 			}
 			
-			System.out.println("\n\nteste\n\nCerto: " + certo + "\nTotal: "+total);
 			evolucao.getGenes()[i].setAptidao((double)(certo/total));  
 		}
 		
@@ -164,6 +170,27 @@ public class AlgoritmoGenetico {
 			}
 		}
 		return mutCromo;
+	}
+
+	public void calcularResultado(Cromossomo maisApto,String pathTeste) {
+		try {
+			DataSource ds = new DataSource(pathTeste);
+			teste = ds.getDataSet();
+			teste.setClassIndex(teste.numAttributes()-1);
+			rf.setMaxDepth(1+Conversor.binToDec(maisApto.getProfundidade()));
+			rf.setNumIterations(1+Conversor.binToDec(maisApto.getArvores()));
+			rf.setNumFeatures(1+Conversor.binToDec(maisApto.getAtributos()));
+			double certo = 0, total =0;
+			fc.setClassifier(rf);
+			Evaluation eval = new Evaluation(validacao);
+			double[] aptidao = eval.evaluateModel(fc,teste);
+			for(int i = 0 ; i< aptidao.length;i++) {
+				if(aptidao[i] == 0.0) certo+=1;
+			}
+			total = aptidao.length;
+			maisApto.setAptidao(certo/total);
+		} catch (Exception e) {
+		}
 	}
 	
 }
