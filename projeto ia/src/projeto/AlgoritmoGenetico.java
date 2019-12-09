@@ -5,11 +5,13 @@ import weka.classifiers.meta.FilteredClassifier;
 import weka.classifiers.trees.RandomForest;
 import weka.core.Instances;
 import weka.core.converters.ConverterUtils.DataSource;
+import weka.filters.Filter;
+import weka.filters.supervised.instance.StratifiedRemoveFolds;
 
 public class AlgoritmoGenetico {
 	public static final int BITS_QNT_ARVORES = 7;
-	public static final int BITS_PROFUNDIDADE = 2;
-	public static final int BITS_QNT_ATRIBUTOS = 2;
+	public static final int BITS_PROFUNDIDADE = 4;
+	public static final int BITS_QNT_ATRIBUTOS = 4;
 	public static final int TAM_POPULACAO = 20;
 	public static final int NUM_ELITE_CROMO = 1;
 	public static final int TOURNAMENT_SELECTION_SIZE = 8;
@@ -40,6 +42,37 @@ public class AlgoritmoGenetico {
 		}
 		
 	}
+	
+	public AlgoritmoGenetico(String path) {
+		this.rf = new RandomForest();
+		this.fc = new FilteredClassifier();
+		fc.setClassifier(rf);
+		StratifiedRemoveFolds fold = new StratifiedRemoveFolds();
+		try {
+			DataSource ds = new DataSource(path);
+			treinamento = ds.getDataSet();
+			treinamento.setClassIndex(treinamento.numAttributes()-1);
+			fold.setInputFormat( treinamento );
+			fold.setSeed( 1 );
+			fold.setNumFolds( 5 );
+			fold.setFold( 5 );
+			fold.setInvertSelection( true );
+			validacao =Filter.useFilter(treinamento, fold);
+			fold = new StratifiedRemoveFolds();
+			fold.setInputFormat( treinamento );
+			fold.setSeed( 1 );
+			fold.setNumFolds( 5 );
+			fold.setFold( 5 );
+			fold.setInvertSelection( false );
+			teste = Filter.useFilter(treinamento, fold);
+		}catch(Exception e) {
+			
+		}
+		
+	        System.out.println( "Size of train = " + treinamento.numInstances() );	 
+	        System.out.println( "Size of subTrain = " + validacao.numInstances() );
+	        System.out.println( "Size of holdoutTrain = " + teste.numInstances() );
+	}
 
 	public Populacao evoluirPop(Populacao pop) {
 		Populacao evolucao = mutacaoPop(crossoverPop(pop));
@@ -60,8 +93,6 @@ public class AlgoritmoGenetico {
 					}
 				}
 				total = a.length;
-					
-				//System.out.println(eval.toSummaryString());
 
 			}catch(Exception e) {
 			}
@@ -172,11 +203,8 @@ public class AlgoritmoGenetico {
 		return mutCromo;
 	}
 
-	public void calcularResultado(Cromossomo maisApto,String pathTeste) {
+	public void calcularResultado(Cromossomo maisApto) {
 		try {
-			DataSource ds = new DataSource(pathTeste);
-			teste = ds.getDataSet();
-			teste.setClassIndex(teste.numAttributes()-1);
 			rf.setMaxDepth(1+Conversor.binToDec(maisApto.getProfundidade()));
 			rf.setNumIterations(1+Conversor.binToDec(maisApto.getArvores()));
 			rf.setNumFeatures(1+Conversor.binToDec(maisApto.getAtributos()));

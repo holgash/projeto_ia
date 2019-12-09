@@ -4,10 +4,11 @@ public class Main {
 
 	public static void main(String[] args) {
 		Populacao pop = new Populacao(AlgoritmoGenetico.TAM_POPULACAO).inicializarPopulacao();
-		String treinamento = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\soybeanTreinamento.arff";
-		String validacao = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\soybeanValidacao.arff";
-		String teste = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\soybeanTeste.arff";
-		AlgoritmoGenetico ag = new AlgoritmoGenetico(treinamento,validacao);
+		/*String treinamento = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\diabetesTreinamento.arff";
+		String validacao = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\diabetesValidacao.arff";
+		String teste = "D:\\PICHAU\\Documents\\projeto ia\\baseDados\\diabetesTeste.arff";
+		AlgoritmoGenetico ag = new AlgoritmoGenetico(treinamento,validacao);*/
+		AlgoritmoGenetico ag = new AlgoritmoGenetico("D:\\PICHAU\\Documents\\projeto ia\\baseDados\\ionosphere.arff");
 		pop = ag.evoluirPop(pop);
 		pop.ordenarCromossomosPorAptidao();
 
@@ -35,8 +36,9 @@ public class Main {
 		System.out.println("\n"+"Geração #"+ numGeracao + "| Cromossomo com Maior Aptidao: " + pop.getGenes()[0].getAptidao());
 		mostrarPopulacao(pop, cabecalho + maisApto.toString());
 		System.out.println("\nCromossomo mais apto:"+maisApto);
-		ag.calcularResultado(maisApto,teste);
+		ag.calcularResultado(maisApto);
 		System.out.println("\nAptidão do mais apto na base de dados de teste: "+maisApto.getAptidao());
+		
 	}
 
 	public static void mostrarPopulacao(Populacao pop, String cabecalho) {
